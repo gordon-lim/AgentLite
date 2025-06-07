@@ -68,7 +68,7 @@ class LangchainLLM(BaseLLM):
         self.llm_chain = LLMChain(prompt=prompt, llm=llm)
 
     def run(self, prompt: str):
-        return self.llm_chain.run(prompt)
+        return self.llm_chain.invoke({"prompt": prompt})["text"]
 
 
 class LangchainChatModel(BaseLLM):
@@ -88,7 +88,7 @@ class LangchainChatModel(BaseLLM):
         self.llm_chain = LLMChain(prompt=prompt, llm=llm)
 
     def run(self, prompt: str):
-        return self.llm_chain.run(prompt)
+        return self.llm_chain.invoke({"prompt": prompt})["text"]
 
 
 # class LangchainOllamaLLM(BaseLLM):
