@@ -5,6 +5,7 @@ import re
 import string
 from collections import Counter
 from typing import List
+from dotenv import load_dotenv
 
 import joblib
 import numpy as np
@@ -100,8 +101,18 @@ def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_a
         PROMPT_DEBUG_FLAG: Whether to enable prompt debugging
         num_examples: Number of examples to evaluate (default: 5)
     """
+    # Load environment variables
+    load_dotenv()
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        raise ValueError("OPENAI_API_KEY not found in environment variables. Please set it in your .env file.")
+
     # build the search agent
-    llm_config = LLMConfig({"llm_name": llm_name, "temperature": 0.0})
+    llm_config = LLMConfig({
+        "llm_name": llm_name, 
+        "temperature": 0.0,
+        "api_key": openai_api_key
+    })
     # running xlam 
     if llm_name in ["xlam", "xlam_v2"]:
         llm_config = LLMConfig(
