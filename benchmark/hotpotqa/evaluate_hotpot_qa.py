@@ -90,11 +90,16 @@ def f1_score(prediction, ground_truth):
     return f1, precision, recall
 
 
-def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False):
+def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=5):
     """
     Test the WikiSearchAgent with a specified dataset level and LLM.
+    Args:
+        level: Dataset difficulty level ("easy", "medium", "hard")
+        llm_name: Name of the language model to use
+        agent_arch: Agent architecture type
+        PROMPT_DEBUG_FLAG: Whether to enable prompt debugging
+        num_examples: Number of examples to evaluate (default: 5)
     """
-
     # build the search agent
     llm_config = LLMConfig({"llm_name": llm_name, "temperature": 0.0})
     # running xlam 
@@ -112,6 +117,8 @@ def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_a
     # add several demo trajectories to the search agent for the HotPotQA benchmark
     hotpot_data = load_hotpot_qa_data(level)
     hotpot_data = hotpot_data.reset_index(drop=True)
+    # Only take the first num_examples
+    hotpot_data = hotpot_data.head(num_examples)
     task_instructions = [
         (row["question"], row["answer"]) for _, row in hotpot_data.iterrows()
     ]
@@ -164,9 +171,21 @@ if __name__ == "__main__":
         action='store_true',
         help="debug flag",
     )
+    parser.add_argument(
+        "--num_examples",
+        type=int,
+        default=5,
+        help="Number of examples to evaluate",
+    )
     args = parser.parse_args()
 
-    f1, acc = run_hotpot_qa_agent(level=args.level, llm_name=args.llm, agent_arch=args.agent_arch, PROMPT_DEBUG_FLAG=args.debug)
+    f1, acc = run_hotpot_qa_agent(
+        level=args.level, 
+        llm_name=args.llm, 
+        agent_arch=args.agent_arch, 
+        PROMPT_DEBUG_FLAG=args.debug,
+        num_examples=args.num_examples
+    )
     print(
         f"{'+'*100}\nLLM model: {args.llm}, Dataset: {args.level}, Result: F1-Score = {f1:.4f}, Accuracy = {acc:.4f}"
     )
