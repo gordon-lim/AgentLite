@@ -146,9 +146,12 @@ def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_a
         avg_f1 = np.mean(f1_list)
         acc = correct / len(task_instructions)
         
-        dump_str = f"{test_task}\t{answer}\t{response}\t{f1:.4f}\t{acc:.4f}\t{execution}\n"
-        with open(f"data/{agent_arch}_{llm_name}_results_{level}.csv", "a") as f:
-            f.write(dump_str)
+        # Create CSV row with proper escaping and quoting
+        import csv
+        row = [test_task, answer, response, f"{f1:.4f}", f"{acc:.4f}", str(execution)]
+        with open(f"data/{agent_arch}_{llm_name}_results_{level}.csv", "a", newline='') as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(row)
             
     return avg_f1, acc
 
