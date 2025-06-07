@@ -69,7 +69,7 @@ def action_format(act: AgentAct, action_trigger: bool = True) -> str:
     """unified format the action as a string"""
     str_params = json.dumps(act.params)
     if action_trigger:
-        act_str = f"""Action:{act.name}[{str_params}]"""
+        act_str = f"""Action: {act.name}[{str_params}]"""
     # w/o Action trigger
     else:
         act_str = f"""{act.name}[{str_params}]"""
@@ -85,6 +85,6 @@ def action_chain_format(action_chain: list[tuple[AgentAct, str]]):
 
 
 def task_chain_format(task: TaskPackage, action_chain: list[tuple[AgentAct, str]]):
-    context = f"Task:{task.instruction}\n"
+    context = f"Task: {task.instruction}\n"
     context += action_chain_format(action_chain)
     return context

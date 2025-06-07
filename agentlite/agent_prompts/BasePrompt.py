@@ -164,7 +164,7 @@ class BasePromptGen(PromptGen):
         cur_session = task_chain_format(task, action_chain)
         prompt += f"""{PROMPT_TOKENS["execution"]['begin']}\n{cur_session}\n"""
         # adding inference token
-        prompt += """Action:"""
+        prompt += """Action: """
         return prompt
 
 
@@ -247,5 +247,5 @@ class ManagerPromptGen(BasePromptGen):
         cur_session = task_chain_format(task, action_chain)
         prompt += f"""{PROMPT_TOKENS["execution"]['begin']}\n{cur_session}\n"""
         # adding inference token
-        prompt += """Action:"""
+        prompt += """Action: """
         return prompt
