@@ -1,5 +1,6 @@
 import os
 import wikipedia
+from wikipedia.exceptions import DisambiguationError
 
 from agentlite.actions.BaseAction import BaseAction
 
@@ -17,5 +18,13 @@ class WikipediaSearch(BaseAction):
         search_results = wikipedia.search(query)
         if not search_results:
             return "No results found."
-        article = wikipedia.page(search_results[0])
-        return article.summary
+            
+        # Try to get the page, handling disambiguation
+        try:
+            article = wikipedia.page(search_results[0])
+            return article.summary
+        except DisambiguationError as e:
+            options = [opt for opt in e.options if opt.lower() != query.lower()]
+            return f"Could not find '{query}'. Similar: {options}"
+        except Exception as e:
+            return f"Error searching Wikipedia: {str(e)}"
