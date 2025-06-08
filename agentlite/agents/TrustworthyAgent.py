@@ -31,11 +31,17 @@ class TrustworthyAgent(BaseAgent):
         trust_score_file: str = None,
         **kwargs
     ):
+        # Get LLM model name and agent architecture for logging
+        llm_model_name = getattr(llm, "model_name", "unk")
+        agent_arch = kwargs.get("agent_arch", "unk")
+        
         # Initialize logger first so we can use it in the rest of initialization
         logger = kwargs.pop('logger', None)
         if logger is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            log_file_name = f"trustworthy_agent_{name}_{llm_model_name}_{agent_arch}_{timestamp}.log"
             logger = TrustworthyAgentLogger(
-                log_file_name=f"trustworthy_agent_{name}.log",
+                log_file_name=log_file_name,
                 FLAG_PRINT=True
             )
         kwargs['logger'] = logger
@@ -49,7 +55,7 @@ class TrustworthyAgent(BaseAgent):
         self.trust_scores = []
         if trust_score_file is None:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            trust_score_file = f"data/trust_scores_{self.name}_{timestamp}.csv"
+            trust_score_file = f"data/trust_scores_{self.name}_{llm_model_name}_{agent_arch}_{timestamp}.csv"
         self.trust_score_file = trust_score_file
         
         # Create CSV file with headers if it doesn't exist
