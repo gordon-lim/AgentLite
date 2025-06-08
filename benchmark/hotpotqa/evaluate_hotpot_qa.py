@@ -91,7 +91,7 @@ def f1_score(prediction, ground_truth):
     return f1, precision, recall
 
 
-def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=5):
+def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None):
     """
     Test the WikiSearchAgent with a specified dataset level and LLM.
     Args:
@@ -99,7 +99,7 @@ def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_a
         llm_name: Name of the language model to use
         agent_arch: Agent architecture type
         PROMPT_DEBUG_FLAG: Whether to enable prompt debugging
-        num_examples: Number of examples to evaluate (default: 5)
+        num_examples: Number of examples to evaluate (default: None)
     """
     # Load environment variables
     load_dotenv()
@@ -128,8 +128,9 @@ def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_a
     # add several demo trajectories to the search agent for the HotPotQA benchmark
     hotpot_data = load_hotpot_qa_data(level)
     hotpot_data = hotpot_data.reset_index(drop=True)
-    # Only take the first num_examples
-    hotpot_data = hotpot_data.head(num_examples)
+    # Only take the first num_examples if specified
+    if num_examples is not None:
+        hotpot_data = hotpot_data.head(num_examples)
     task_instructions = [
         (row["question"], row["answer"]) for _, row in hotpot_data.iterrows()
     ]
@@ -188,8 +189,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num_examples",
         type=int,
-        default=5,
-        help="Number of examples to evaluate",
+        default=None,
+        help="Number of examples to evaluate. If not provided, uses the entire dataset.",
     )
     args = parser.parse_args()
 
