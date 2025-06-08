@@ -116,10 +116,3 @@ class TrustworthyAgentLogger(AgentLogger):
         # Log the trust score on its own line
         trust_str = f"""Trustworthiness score: {self.__color_trust_score__(trust_score)}"""
         self.__save_log__(trust_str)
-
-    def log_agent_trust_summary(self, agent_name: str, avg_trust_score: float, trust_history: list[float]):
-        """Log a summary of an agent's trustworthiness scores."""
-        log_str = f"""Trust Summary for Agent {self.__color_agent_name__(agent_name)}:\n"""
-        log_str += f"Average Trust Score: {self.__color_trust_score__(avg_trust_score)}\n"
-        log_str += f"Trust History: [{', '.join([self.__color_trust_score__(score) for score in trust_history])}]"
-        self.__save_log__(log_str)
