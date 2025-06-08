@@ -85,3 +85,41 @@ class AgentLogger(BaseAgentLogger):
         log_str = f"""LLM generates: {self.__color_prompt_str__(output)}"""
         if self.PROMPT_DEBUG_FLAG:
             self.__save_log__(log_str)
+
+class TrustworthyAgentLogger(AgentLogger):
+    def __init__(
+        self,
+        log_file_name: str = "trustworthy_agent.log",
+        FLAG_PRINT: bool = True,
+        OBS_OFFSET: int = 99999,
+        PROMPT_DEBUG_FLAG: bool = False,
+    ) -> None:
+        super().__init__(
+            log_file_name=log_file_name,
+            FLAG_PRINT=FLAG_PRINT,
+            OBS_OFFSET=OBS_OFFSET,
+            PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG,
+        )
+
+    def __color_trust_score__(self, score: float):
+        # Color coding based on trust score ranges
+        if score >= 0.8:
+            color = bcolors.OKGREEN  # High trust - green
+        elif score >= 0.5:
+            color = bcolors.WARNING  # Medium trust - yellow
+        else:
+            color = bcolors.FAIL     # Low trust - red
+        return f"{color}{score:.2f}{bcolors.ENDC}"
+
+    def log_action_trust(self, action: AgentAct, trust_score: float, agent_name: str, step_idx: int):
+        """Log an action's trustworthiness score."""        
+        # Log the trust score on its own line
+        trust_str = f"""Trustworthiness score: {self.__color_trust_score__(trust_score)}"""
+        self.__save_log__(trust_str)
+
+    def log_agent_trust_summary(self, agent_name: str, avg_trust_score: float, trust_history: list[float]):
+        """Log a summary of an agent's trustworthiness scores."""
+        log_str = f"""Trust Summary for Agent {self.__color_agent_name__(agent_name)}:\n"""
+        log_str += f"Average Trust Score: {self.__color_trust_score__(avg_trust_score)}\n"
+        log_str += f"Trust History: [{', '.join([self.__color_trust_score__(score) for score in trust_history])}]"
+        self.__save_log__(log_str)

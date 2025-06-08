@@ -2,13 +2,13 @@ from SearchActions import WikipediaSearch
 
 from agentlite.actions import BaseAction, FinishAct, ThinkAct, PlanAct
 from agentlite.actions.InnerActions import INNER_ACT_KEY
-from agentlite.agents import BaseAgent
+from agentlite.agents import BaseAgent, TrustworthyAgent
 from agentlite.commons import AgentAct, TaskPackage
 from agentlite.llm.agent_llms import BaseLLM, get_llm_backend
 from agentlite.llm.LLMConfig import LLMConfig
-from agentlite.logging.terminal_logger import AgentLogger
+from agentlite.logging.terminal_logger import TrustworthyAgentLogger
 
-class WikiSearchAgent(BaseAgent):
+class WikiSearchAgent(TrustworthyAgent):
     """
     Agent to search Wikipedia content and answer questions.
     """
@@ -34,7 +34,7 @@ class WikiSearchAgent(BaseAgent):
             reasoning_type=reasoning_type,
             constraint=constraint,
             instruction=instruction, # common instruction will use default in agentlite.agent_prompts.prompt_utils.DEFAULT_PROMPT["agent_instruction"]
-            logger=AgentLogger(PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG)
+            logger=TrustworthyAgentLogger(PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG)
         )
         self.__build_examples__()
 
