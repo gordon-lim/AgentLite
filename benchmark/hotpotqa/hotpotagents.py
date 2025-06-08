@@ -17,7 +17,7 @@ class WikiSearchAgent(TrustworthyAgent):
         name = "wiki_search_agent"
         role = "Answer questions by searching Wikipedia content."
         constraint = "Generation should be simple and clear."
-        instruction = "You are an intelligent Wikipedia agent. You should follow your [Role], [Action_Doc] to take actions. You should decompose your task into executable actions. Your generation should follow the example format. Finish the task if you find the answer. And you answer should be simple and straighforward. DO NOT repeat your actions."
+        instruction = "You are an intelligent Wikipedia agent. You should follow your [Role], [Action_Doc] to take actions. You should decompose your task into executable actions. Your generation should follow the example format. Finish the task if you find the answer. And your answer should be simple and straighforward. You can only take one action per generation. DO NOT repeat your actions."
         self.agent_arch = agent_arch
         if agent_arch in ["zs"]:
             reasoning_type = "act"
