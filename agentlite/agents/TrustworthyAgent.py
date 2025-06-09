@@ -46,6 +46,9 @@ class TrustworthyAgent(BaseAgent):
         kwargs['logger'] = logger
         
         super().__init__(name=name, role=role, llm=llm, actions=actions, **kwargs)
+
+        # Set the maximum number of execution steps according to the BOLAA implementation
+        self.max_exec_steps = 10
         
         # Initialize the TLM model
         self.tlm = TLM()
