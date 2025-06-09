@@ -14,6 +14,7 @@ OPENAI_CHAT_MODELS = [
     "gpt-4-32k",
     "gpt-4-32k-0613",
     "gpt-4-1106-preview",
+    "gpt-4.1-mini"
 ]
 OPENAI_LLM_MODELS = ["text-davinci-003", "text-ada-001"]
 
