@@ -34,7 +34,8 @@ class WikiSearchAgent(TrustworthyAgent):
             reasoning_type=reasoning_type,
             constraint=constraint,
             instruction=instruction, # common instruction will use default in agentlite.agent_prompts.prompt_utils.DEFAULT_PROMPT["agent_instruction"]
-            logger=TrustworthyAgentLogger(PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG)
+            logger=TrustworthyAgentLogger(PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG),
+            agent_arch=agent_arch
         )
         self.__build_examples__()
 
