@@ -5,6 +5,9 @@ openai==1.55.3
 pydantic
 python-dotenv==1.0.1
 
+# TrustworthyAgent
+cleanlab-tlm
+
 # hotpotqa joblib picked using pandas<2.0
 pandas<2.0
 
