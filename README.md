@@ -5,9 +5,13 @@ The following are my main contributions:
 - `TrustworthyAgent` class in `agentlite/agents` to support [Cleanlab TLM](https://cleanlab.ai/tlm/) trustworthiness scoring of every LLM output.
 - `TrustworthyAgentLogger` class in `agentlite/logging/terminal_logger.py` to print trustworthiness scores to the terminal (used by `TrustworthyAgent`).
 - `WikiSearchAgent` in `benchmark/hotpotqa/hotpotagents.py` now inherits from `TrustworthyAgent` to support trustworthiness scoring.
-- Other minor improvements/bug fixes e.g. enforcing one action per turn, remove duplicate `Action:` prefixes in LLM output.
+- Other minor improvements/bug fixes e.g. enforcing one action per turn, remove duplicate `Action:` prefixes in LLM output, use `load_dotenv()` for API keys etc.
 
 To demo these improvements:
+
+First, ceate `.env` and set 
+* `CLEANLAB_TLM_API_KEY` (Get your free API key from: https://tlm.cleanlab.ai/)
+* *`OPENAI_API_KEY` (Sign up for OpenAI at https://platform.openai.com/signup.)
 ```
 cd benchmark/hotpotqa
 python evaluate_hotpot_qa.py --llm gpt-4.1-mini --agent_arch act
