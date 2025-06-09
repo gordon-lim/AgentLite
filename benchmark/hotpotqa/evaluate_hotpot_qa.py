@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import re
+import csv
 import string
 from collections import Counter
 from typing import List
@@ -91,15 +92,17 @@ def f1_score(prediction, ground_truth):
     return f1, precision, recall
 
 
-def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None):
+def run_hotpot_qa_agent_one_complex_level(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None):
     """
-    Test the WikiSearchAgent with a specified dataset level and LLM.
+    Test the WikiSearchAgent with a single specified dataset level and LLM.
     Args:
         level: Dataset difficulty level ("easy", "medium", "hard")
         llm_name: Name of the language model to use
         agent_arch: Agent architecture type
         PROMPT_DEBUG_FLAG: Whether to enable prompt debugging
         num_examples: Number of examples to evaluate (default: None)
+    Returns:
+        tuple: (average_f1_score, accuracy) for the specified level
     """
     # Load environment variables
     load_dotenv()
@@ -125,17 +128,22 @@ def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_a
         )
     llm = get_llm_backend(llm_config)
     agent = WikiSearchAgent(llm=llm, agent_arch=agent_arch, PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG)
-    # add several demo trajectories to the search agent for the HotPotQA benchmark
+    
+    # Initialize results file for this level
+    results_file = f"data/{agent_arch}_{llm_name}_results_{level}.csv"
+    with open(results_file, "w", newline='') as f:
+        writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(["Question", "Ground Truth", "Prediction", "F1 Score", "Running Accuracy", "Execution Chain"])
+    
     hotpot_data = load_hotpot_qa_data(level)
     hotpot_data = hotpot_data.reset_index(drop=True)
-    # Only take the first num_examples if specified
     if num_examples is not None:
         hotpot_data = hotpot_data.head(num_examples)
     task_instructions = [
         (row["question"], row["answer"]) for _, row in hotpot_data.iterrows()
     ]
     f1_list, correct, results = [], 0, {}
-    for test_task, answer in tqdm(task_instructions, desc="Processing"):
+    for test_task, answer in tqdm(task_instructions, desc=f"Processing {level} level"):
         test_task_pack = TaskPackage(instruction=test_task)
         response = agent(test_task_pack)
         execution = agent.short_term_memory.get_action_chain(task=test_task_pack)
@@ -148,13 +156,49 @@ def run_hotpot_qa_agent(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_a
         acc = correct / len(task_instructions)
         
         # Create CSV row with proper escaping and quoting
-        import csv
         row = [test_task, answer, response, f"{f1:.4f}", f"{acc:.4f}", str(execution)]
-        with open(f"data/{agent_arch}_{llm_name}_results_{level}.csv", "a", newline='') as f:
+        with open(results_file, "a", newline='') as f:
             writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
             writer.writerow(row)
             
     return avg_f1, acc
+
+def run_hotpot_qa_agent(level=None, llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None):
+    """
+    Test the WikiSearchAgent on HotPotQA benchmark.
+    Args:
+        level: Dataset difficulty level ("easy", "medium", "hard") or None for all levels
+        llm_name: Name of the language model to use
+        agent_arch: Agent architecture type
+        PROMPT_DEBUG_FLAG: Whether to enable prompt debugging
+        num_examples: Number of examples to evaluate per level (default: None)
+    Returns:
+        dict: Results for each level containing (f1_score, accuracy) tuples
+    """
+    if level is not None:
+        if level not in ["easy", "medium", "hard"]:
+            raise ValueError("Level must be one of: easy, medium, hard")
+        f1, acc = run_hotpot_qa_agent_one_complex_level(
+            level=level,
+            llm_name=llm_name,
+            agent_arch=agent_arch,
+            PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG,
+            num_examples=num_examples
+        )
+        return {level: (f1, acc)}
+    else:
+        results = {}
+        for lvl in ["easy", "medium", "hard"]:
+            print(f"\nRunning evaluation for {lvl} level...")
+            f1, acc = run_hotpot_qa_agent_one_complex_level(
+                level=lvl,
+                llm_name=llm_name,
+                agent_arch=agent_arch,
+                PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG,
+                num_examples=num_examples
+            )
+            results[lvl] = (f1, acc)
+        return results
 
 
 if __name__ == "__main__":
@@ -165,8 +209,8 @@ if __name__ == "__main__":
         "--level",
         type=str,
         choices=["easy", "medium", "hard"],
-        default="medium",
-        help="Difficulty level of the dataset.",
+        default=None,
+        help="Difficulty level of the dataset. If not provided, runs all levels.",
     )
     parser.add_argument(
         "--llm",
@@ -194,13 +238,15 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    f1, acc = run_hotpot_qa_agent(
+    results = run_hotpot_qa_agent(
         level=args.level, 
         llm_name=args.llm, 
         agent_arch=args.agent_arch, 
         PROMPT_DEBUG_FLAG=args.debug,
         num_examples=args.num_examples
     )
-    print(
-        f"{'+'*100}\nLLM model: {args.llm}, Dataset: {args.level}, Result: F1-Score = {f1:.4f}, Accuracy = {acc:.4f}"
-    )
+    
+    print(f"{'+'*100}")
+    for level, (f1, acc) in results.items():
+        print(f"LLM model: {args.llm}, Dataset: {level}, Result: F1-Score = {f1:.4f}, Accuracy = {acc:.4f}")
+    print(f"{'+'*100}")

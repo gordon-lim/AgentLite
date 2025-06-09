@@ -19,7 +19,7 @@ class TrustworthyAgent(BaseAgent):
     
     Additional parameters:
         trust_score_file: str, optional
-            Path to save trustworthiness scores. Defaults to "trust_scores_{timestamp}.csv"
+            Path to save trustworthiness scores.
     """
     
     def __init__(
@@ -38,8 +38,7 @@ class TrustworthyAgent(BaseAgent):
         # Initialize logger first so we can use it in the rest of initialization
         logger = kwargs.pop('logger', None)
         if logger is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            log_file_name = f"trustworthy_{agent_arch}_{llm_model_name}_{timestamp}.log"
+            log_file_name = f"trustworthy_{agent_arch}_{llm_model_name}.log"
             logger = TrustworthyAgentLogger(
                 log_file_name=log_file_name,
                 FLAG_PRINT=True
@@ -54,8 +53,7 @@ class TrustworthyAgent(BaseAgent):
         # Initialize trust score tracking
         self.trust_scores = []
         if trust_score_file is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            trust_score_file = f"data/trustworthy_{agent_arch}_{llm_model_name}_{timestamp}.csv"
+            trust_score_file = f"data/trustworthy_{agent_arch}_{llm_model_name}.csv"
         self.trust_score_file = trust_score_file
         
         # Create CSV file with headers if it doesn't exist
