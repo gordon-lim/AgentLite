@@ -1,9 +1,11 @@
 from typing import List, Dict, Any
 import csv
+from utils import f1_score
 from datetime import datetime
 from dotenv import load_dotenv
 from .BaseAgent import BaseAgent
 from agentlite.commons import TaskPackage, AgentAct
+from agentlite.actions import FinishAct
 from agentlite.commons.AgentAct import ActObsChainType
 from cleanlab_tlm import TLM
 from agentlite.logging.terminal_logger import TrustworthyAgentLogger
@@ -20,6 +22,8 @@ class TrustworthyAgent(BaseAgent):
     Additional parameters:
         trust_score_file: str, optional
             Path to save trustworthiness scores.
+        score_last_only: bool, optional
+            Whether to only score the last Finish act.
     """
     
     def __init__(
@@ -29,6 +33,7 @@ class TrustworthyAgent(BaseAgent):
         llm: Any,
         actions: List[Any] = [],
         trust_score_file: str = None,
+        score_last_only: bool = False,
         **kwargs
     ):
         # Get LLM model name and agent architecture for logging
@@ -50,6 +55,9 @@ class TrustworthyAgent(BaseAgent):
         # Set the maximum number of execution steps according to the BOLAA implementation
         self.max_exec_steps = 10
         
+        # Store the score_last_only parameter
+        self.score_last_only = score_last_only
+        
         # Initialize the TLM model
         self.tlm = TLM()
 
@@ -66,9 +74,13 @@ class TrustworthyAgent(BaseAgent):
                 writer.writerow([
                     'task_id',
                     'step',
+                    'question',
+                    'answer',
                     'prompt',
                     'raw_action',
+                    'finish_response',
                     'trust_score',
+                    'f1',
                     'action_name',
                     'action_params'
                 ])
@@ -101,30 +113,48 @@ class TrustworthyAgent(BaseAgent):
         # Parse the action
         agent_act = self.__action_parser__(raw_action)
         
-        # Calculate trust score
-        trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
+        # Calculate trust score based on score_last_only setting
+        trust_score = None
+        f1 = None
+        response = None
         
-        # Log the action with trust score using TrustworthyAgentLogger
-        self.logger.log_action_trust(
-            action=agent_act,
-            trust_score=trust_score,
-            agent_name=self.name,
-            step_idx=len(action_chain)
-        )
+        # Score based on score_last_only setting
+        if not self.score_last_only:
+            trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
+        elif agent_act.name == FinishAct.action_name:
+            trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
 
-        # Record the interaction
-        self.__record_interaction__(
-            task_id=task.task_id,
-            step=len(action_chain),
-            prompt=action_prompt,
-            raw_action=raw_action,
-            trust_score=trust_score,
-            action_name=agent_act.name,
-            action_params=agent_act.params
-        )
+        # Calculate F1 score for Finish actions
+        if agent_act.name == FinishAct.action_name:
+            response = FinishAct(**agent_act.params)
+            f1, _, _ = f1_score(response, task.ground_truth)
         
-        # Update trust scores list
-        self.trust_scores.append(trust_score)
+        # Log the action with trust score using TrustworthyAgentLogger (only if we have a trust score)
+        if trust_score is not None:
+            self.logger.log_action_trust(
+                action=agent_act,
+                trust_score=trust_score,
+                agent_name=self.name,
+                step_idx=len(action_chain)
+            )
+
+            # Record the interaction
+            self.__record_interaction__(
+                task_id=task.task_id,
+                step=len(action_chain),
+                question=task.instruction,
+                answer=task.ground_truth,
+                prompt=action_prompt,
+                raw_action=raw_action,
+                finish_response=response,
+                trust_score=trust_score,
+                f1=f1,
+                action_name=agent_act.name,
+                action_params=agent_act.params
+            )
+            
+            # Update trust scores list
+            self.trust_scores.append(trust_score)
         
         return agent_act
 
@@ -140,9 +170,13 @@ class TrustworthyAgent(BaseAgent):
                 writer.writerow([
                     kwargs.get('task_id', ''),
                     kwargs.get('step', 0),
+                    kwargs.get('question', ''),
+                    kwargs.get('answer', ''),
                     kwargs.get('prompt', ''),
                     kwargs.get('raw_action', ''),
-                    kwargs.get('trust_score', 0.0),
+                    kwargs.get('finish_response', None),
+                    kwargs.get('trust_score', None),
+                    kwargs.get('f1', None),
                     kwargs.get('action_name', ''),
                     str(kwargs.get('action_params', {}))
                 ])

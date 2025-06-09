@@ -4,8 +4,7 @@ import os
 import re
 import csv
 import string
-from collections import Counter
-from typing import List
+from utils import f1_score
 from dotenv import load_dotenv
 
 import joblib
@@ -53,44 +52,6 @@ def load_hotpot_qa_data(level):
         download_file(data_url, file_path)
     # joblib requires python 3.10 or higher
     return joblib.load(file_path)
-
-
-def normalize_answer(s):
-    """
-    Normalize answers for evaluation.
-    """
-
-    def remove_articles(text):
-        return re.sub(r"\b(a|an|the)\b", " ", text)
-
-    def white_space_fix(text):
-        return " ".join(text.split())
-
-    def remove_punc(text):
-        exclude = set(string.punctuation)
-        return "".join(ch for ch in text if ch not in exclude)
-
-    def lower(text):
-        return text.lower()
-
-    return white_space_fix(remove_articles(remove_punc(lower(s))))
-
-
-def f1_score(prediction, ground_truth):
-    """
-    Compute the F1 score between prediction and ground truth answers.
-    """
-    prediction_tokens = normalize_answer(prediction).split()
-    ground_truth_tokens = normalize_answer(ground_truth).split()
-    common = Counter(prediction_tokens) & Counter(ground_truth_tokens)
-    num_same = sum(common.values())
-    if num_same == 0:
-        return 0, 0, 0
-    precision = 1.0 * num_same / len(prediction_tokens)
-    recall = 1.0 * num_same / len(ground_truth_tokens)
-    f1 = (2 * precision * recall) / (precision + recall)
-    return f1, precision, recall
-
 
 def run_hotpot_qa_agent_one_complex_level(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None):
     """
@@ -144,7 +105,7 @@ def run_hotpot_qa_agent_one_complex_level(level="easy", llm_name="gpt-3.5-turbo-
     ]
     f1_list, correct, results = [], 0, {}
     for test_task, answer in tqdm(task_instructions, desc=f"Processing {level} level"):
-        test_task_pack = TaskPackage(instruction=test_task)
+        test_task_pack = TaskPackage(instruction=test_task, ground_truth=answer)
         response = agent(test_task_pack)
         execution = agent.short_term_memory.get_action_chain(task=test_task_pack)
         f1, _, _ = f1_score(response, answer)

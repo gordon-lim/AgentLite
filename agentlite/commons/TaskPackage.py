@@ -10,6 +10,7 @@ class TaskPackage(BaseModel):
     creator: str = ""
     timestamp: str = time.time()
     answer: str = ""
+    ground_truth: str = ""
     executor: str = ""
     priority: int = 5
     task_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
