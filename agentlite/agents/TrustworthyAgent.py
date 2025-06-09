@@ -92,6 +92,9 @@ class TrustworthyAgent(BaseAgent):
         )
         self.logger.get_prompt(action_prompt)
         raw_action = self.llm_layer(action_prompt)
+        # Remove 'Action: ' prefix if present to avoid duplication
+        if raw_action.startswith('Action: '):
+            raw_action = raw_action[8:]
         self.logger.get_llm_output(raw_action)
         
         # Parse the action
