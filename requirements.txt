@@ -3,6 +3,10 @@ langchain==0.1.3
 langchain_openai==0.0.5
 openai==1.55.3
 pydantic
+python-dotenv==1.0.1
+
+# hotpotqa joblib picked using pandas<2.0
+pandas<2.0
 
 ## formatting
 # black
