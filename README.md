@@ -2,9 +2,17 @@
 
 This is a fork of [AgentLite]([https://github.com/original/repo](https://github.com/SalesforceAIResearch/AgentLite)).  
 The following are my main contributions:
-- `TrustworthyAgent` class in `agentlite/agents` to support [Cleanlab TLM](https://cleanlab.ai/tlm/) trustworthiness scoring of every LLM output
-- `TrustworthyAgentLogger` class in `agentlite/logging/terminal_logger.py` to print trustworthiness scores to the terminal
+- `TrustworthyAgent` class in `agentlite/agents` to support [Cleanlab TLM](https://cleanlab.ai/tlm/) trustworthiness scoring of every LLM output.
+- `TrustworthyAgentLogger` class in `agentlite/logging/terminal_logger.py` to print trustworthiness scores to the terminal (used by `TrustworthyAgent`).
+- `WikiSearchAgent` in `benchmark/hotpotqa/hotpotagents.py` now inherits from `TrustworthyAgent` to support trustworthiness scoring.
 - Other minor improvements/bug fixes e.g. enforcing one action per turn, remove duplicate `Action:` prefixes in LLM output.
+
+To demo these improvements:
+```
+cd benchmark/hotpotqa
+python evaluate_hotpot_qa.py --llm gpt-4.1-mini --agent_arch act
+```
+This will save results + trust scores to `data/`.
 
 See the original README below for full usage and documentation.
 
