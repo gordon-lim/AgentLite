@@ -1,3 +1,15 @@
+## 🚧 Fork Notice
+
+This is a fork of [AgentLite]([https://github.com/original/repo](https://github.com/SalesforceAIResearch/AgentLite)).  
+The following are my main contributions:
+- `TrustworthyAgent` class in `agentlite/agents` to support [Cleanlab TLM](https://cleanlab.ai/tlm/) trustworthiness scoring of every LLM output
+- `TrustworthyAgentLogger` class in `agentlite/logging/terminal_logger.py` to print trustworthiness scores to the terminal
+- Other minor improvements/bug fixes e.g. enforcing one action per turn, remove duplicate `Action:` prefixes in LLM output.
+
+See the original README below for full usage and documentation.
+
+
+
 <div align="center">
   <a href="https://github.com/SalesforceAIResearch/AgentLite/tree/main"><img width="300px" height="auto" src="./image/AgentLite.jpg"></a>
 </div>
