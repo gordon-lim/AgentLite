@@ -1,5 +1,7 @@
 ## 🚧 Fork Notice
 
+TODO: Instructions to build your own `TrustworthyAgent`.
+
 This is a fork of [AgentLite]([https://github.com/original/repo](https://github.com/SalesforceAIResearch/AgentLite)).  
 The following are my main contributions:
 - `TrustworthyAgent` class in `agentlite/agents` to support [Cleanlab TLM](https://cleanlab.ai/tlm/) trustworthiness scoring of every LLM output.
