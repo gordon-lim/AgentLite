@@ -1,26 +1,49 @@
 ## 🚧 Fork Notice
 
-TODO: Instructions to build your own `TrustworthyAgent`.
+This repository is a fork of [AgentLite](https://github.com/SalesforceAIResearch/AgentLite). We've extended it with **TrustworthyAgent**, which integrates Cleanlab TLM for trustworthiness scoring of LLM outputs.
 
-This is a fork of [AgentLite]([https://github.com/original/repo](https://github.com/SalesforceAIResearch/AgentLite)).  
-The following are my main contributions:
-- `TrustworthyAgent` class in `agentlite/agents` to support [Cleanlab TLM](https://cleanlab.ai/tlm/) trustworthiness scoring of every LLM output.
-- `TrustworthyAgentLogger` class in `agentlite/logging/terminal_logger.py` to print trustworthiness scores to the terminal (used by `TrustworthyAgent`).
-- `WikiSearchAgent` in `benchmark/hotpotqa/hotpotagents.py` now inherits from `TrustworthyAgent` to support trustworthiness scoring.
-- Other minor improvements/bug fixes e.g. enforcing one action per turn, remove duplicate `Action:` prefixes in LLM output, use `load_dotenv()` for API keys etc.
+### Main Contributions
 
-To demo these improvements:
+* **TrustworthyAgent** (`agentlite/agents/TrustworthyAgent.py`): Wraps LLM calls to compute Cleanlab TLM trust scores on every output.
+* **TrustworthyAgentLogger** (`agentlite/logging/terminal_logger.py`): Logs trust scores alongside agent actions in the terminal.
+* **WikiSearchAgent** (`benchmark/hotpotqa/hotpotagents.py`): Now inherits from `TrustworthyAgent` to score trustworthiness for each action.
+* **Minor improvements and bug fixes:**
 
-First, ceate `.env` and set 
-* `CLEANLAB_TLM_API_KEY` (Get your free API key from: https://tlm.cleanlab.ai/)
-* *`OPENAI_API_KEY` (Sign up for OpenAI at https://platform.openai.com/signup.)
-```
-cd benchmark/hotpotqa
-python evaluate_hotpot_qa.py --llm gpt-4.1-mini --agent_arch act
-```
-This will save results + trust scores to `data/`.
+  * Enforce one action per turn.
+  * Remove duplicate `Action:` prefixes in LLM output.
+  * Load environment variables with `python-dotenv` (`load_dotenv()`).
+  * Add `--num_examples` flag to `evaluate_hotpot_qa.py` for quick testing.
+  * Limit steps to 10 (following [BOLAA](https://github.com/salesforce/BOLAA)).
+  * Run benchmarks on all difficulty levels by default; use `--level` to filter.
+  * Generate a new task ID for each interaction.
+  * Add error handling in `hotpotqa/SearchActions.py`.
 
-See the original README below for full usage and documentation.
+---
+
+### Demo
+
+1. Create a `.env` file in this repository and set:
+
+   ```bash
+   CLEANLAB_TLM_API_KEY=<your_cleanlab_api_key>  # Get your free API key from: https://tlm.cleanlab.ai/
+   OPENAI_API_KEY=<your_openai_api_key>          # Sign up for OpenAI at https://platform.openai.com/signup
+   ```
+2. Install dependencies:
+
+   ```bash
+   pip install -e .
+   pip install joblib
+   ```
+3. Run the evaluation:
+
+   ```bash
+   cd benchmark/hotpotqa
+   python evaluate_hotpot_qa.py --llm gpt-4.1-mini --agent_arch act
+   ```
+4. Results (including trust scores) will be saved in `data/`.
+
+For full usage and extended documentation, refer to the original [AgentLite](https://github.com/SalesforceAIResearch/AgentLite) README below.
+
 
 
 
