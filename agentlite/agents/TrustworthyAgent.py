@@ -182,13 +182,3 @@ class TrustworthyAgent(BaseAgent):
                 ])
         except Exception as e:
             self.logger.error(f"Failed to record trust score: {str(e)}")
-
-    def get_observation(self, obs: str) -> str:
-        """Override get_observation to include trust score logging."""
-        # Calculate trust score for observation
-        trust_score = self.tlm.get_trustworthiness_score("", obs)["trustworthiness_score"]
-        
-        # Log observation with trust score
-        self.logger.log_observation_trust(obs, trust_score)
-        
-        return super().get_observation(obs)
