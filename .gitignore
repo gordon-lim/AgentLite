@@ -10,7 +10,6 @@ node_modules/
 *.log
 *.out
 *.csv
-data/
 bin/
 include/
 .chainlit
