@@ -42,6 +42,28 @@ This repository is a fork of [AgentLite](https://github.com/SalesforceAIResearch
    ```
 4. Results (including trust scores) will be saved in `data/`.
 
+### Minimal TLM Setup
+
+Our `TrustworthyAgent` includes additional code for benchmarking, but here is a minimal version that highlights only the essential TLM integration needed for trust scoring:
+
+```python
+from cleanlab_tlm import TLM
+from .BaseAgent import BaseAgent
+
+class TrustworthyAgent(BaseAgent):
+    def __init__(self, name, role, llm, **kwargs):
+        super().__init__(name=name, role=role, llm=llm, actions=actions, **kwargs)
+        # Initialize TLM
+        self.tlm = TLM()
+
+    def __next_act__(self, task, action_chain):
+        action_prompt = self.prompt_gen.action_prompt(task, self.actions, action_chain)
+        raw_action = self.llm_layer(action_prompt)
+        # Get trustworthiness score
+        self.trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
+        return self.__action_parser__(raw_action)
+```
+
 For full usage and extended documentation, refer to the original [AgentLite](https://github.com/SalesforceAIResearch/AgentLite) README below.
 
 
