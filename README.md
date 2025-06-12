@@ -16,7 +16,9 @@ This repository is a fork of [AgentLite](https://github.com/SalesforceAIResearch
   * Limit steps to 10 (following [BOLAA](https://github.com/salesforce/BOLAA)).
   * Run benchmarks on all difficulty levels by default; use `--level` to filter.
   * Generate a new task ID for each interaction.
-  * Add error handling in `hotpotqa/SearchActions.py`.
+  * Add error handling for Wiki searches in `hotpotqa/SearchActions.py`.
+  * Re-save `hard.joblib` HotPotQA data file using pandas >= 2.0 to fix `ModuleNotFoundError: No module named 'pandas.core.indexes.numeric'`.
+  * Replace run with invoke for `LLMChain` to comply with LangChain ≥ 0.1.0.
 
 ---
 
