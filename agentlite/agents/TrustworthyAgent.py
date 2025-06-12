@@ -7,14 +7,15 @@ from .BaseAgent import BaseAgent
 from agentlite.commons import TaskPackage, AgentAct
 from agentlite.actions import FinishAct
 from agentlite.commons.AgentAct import ActObsChainType
-from cleanlab_tlm import TLM
-from agentlite.logging.terminal_logger import TrustworthyAgentLogger
 
-# Load environment variables
+# ----- Minimal TLM Setup -----------------
+from cleanlab_tlm import TLM
+# -----------------------------------------
+
 load_dotenv()
 
 class TrustworthyAgent(BaseAgent):
-    """A BaseAgent that tracks and scores LLM interactions for trustworthiness.
+    """A TrustworthyAgent that tracks and scores LLM interactions for trustworthiness.
     
     This agent extends BaseAgent to add trustworthiness scoring functionality.
     It tracks all LLM interactions (prompts and responses) and saves them to CSV.
@@ -36,11 +37,10 @@ class TrustworthyAgent(BaseAgent):
         score_last_only: bool = False,
         **kwargs
     ):
-        # Get LLM model name and agent architecture for logging
+        # ---------------- Logger Setup (Optional) ----------------
+        from agentlite.logging.terminal_logger import TrustworthyAgentLogger
         llm_model_name = getattr(llm, "llm_name", "unk")
         agent_arch = kwargs.get("agent_arch", "unk")
-        
-        # Initialize logger first so we can use it in the rest of initialization
         logger = kwargs.pop('logger', None)
         if logger is None:
             log_file_name = f"trustworthy_{agent_arch}_{llm_model_name}.log"
@@ -49,25 +49,23 @@ class TrustworthyAgent(BaseAgent):
                 FLAG_PRINT=True
             )
         kwargs['logger'] = logger
-        
+        # ---------------------------------------------------
+
+        # ---------------- BaseAgent ----------------
         super().__init__(name=name, role=role, llm=llm, actions=actions, **kwargs)
-
-        # Set the maximum number of execution steps according to the BOLAA implementation
-        self.max_exec_steps = 10
+        self.max_exec_steps = 10 # Set max steps for agent following BOLAA
+        # ---------------------------------------------------
         
-        # Store the score_last_only parameter
-        self.score_last_only = score_last_only
+        self.score_last_only = score_last_only         # Optional: Whether to score only final Finish act
         
-        # Initialize the TLM model
+        # ---------------- Minimal TLM Setup ----------------
         self.tlm = TLM()
+        # ---------------------------------------------------
 
-        # Initialize trust score tracking
-        self.trust_scores = []
+        # ---------------- Save to CSV (Optional) ----------------
         if trust_score_file is None:
             trust_score_file = f"data/trustworthy_{agent_arch}_{llm_model_name}.csv"
         self.trust_score_file = trust_score_file
-        
-        # Create CSV file with headers if it doesn't exist
         try:
             with open(self.trust_score_file, 'x', newline='') as f:
                 writer = csv.writer(f)
@@ -85,7 +83,8 @@ class TrustworthyAgent(BaseAgent):
                     'action_params'
                 ])
         except FileExistsError:
-            pass  # File already exists, that's fine
+            pass  # File already exists
+        # ---------------------------------------------------
 
     def __next_act__(self, task: TaskPackage, action_chain: ActObsChainType) -> AgentAct:
         """Override __next_act__ to track and score LLM interactions.
@@ -97,7 +96,7 @@ class TrustworthyAgent(BaseAgent):
         Returns:
             AgentAct: The next action to take
         """
-        # Get the prompt and generate action as normal
+        # ---------------- BaseAgent ----------------
         action_prompt = self.prompt_gen.action_prompt(
             task=task,
             actions=self.actions,
@@ -105,31 +104,26 @@ class TrustworthyAgent(BaseAgent):
         )
         self.logger.get_prompt(action_prompt)
         raw_action = self.llm_layer(action_prompt)
-        # Remove 'Action: ' prefix if present to avoid duplication
         if raw_action.startswith('Action: '):
             raw_action = raw_action[8:]
         self.logger.get_llm_output(raw_action)
-        
-        # Parse the action
         agent_act = self.__action_parser__(raw_action)
-        
-        # Calculate trust score based on score_last_only setting
+        # ---------------------------------------------------
+
+        # ---------------- Minimal TLM Setup ----------------
         trust_score = None
+        if not self.score_last_only or agent_act.name == FinishAct.action_name:
+            trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
+        # ---------------------------------------------------
+
+        # ---------------- Get F1 score & Response (Optional) ----------------
         f1 = None
         response = None
-        
-        # Score based on score_last_only setting
-        if not self.score_last_only:
-            trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
-        elif agent_act.name == FinishAct.action_name:
-            trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
-
-        # Calculate F1 score for Finish actions
         if agent_act.name == FinishAct.action_name:
             response = FinishAct(**agent_act.params)
             f1, _, _ = f1_score(response, task.ground_truth)
         
-        # Log the action with trust score using TrustworthyAgentLogger (only if we have a trust score)
+        # ---------------- Logging & Saving (Optional) ----------------
         if trust_score is not None:
             self.logger.log_action_trust(
                 action=agent_act,
@@ -138,7 +132,6 @@ class TrustworthyAgent(BaseAgent):
                 step_idx=len(action_chain)
             )
 
-            # Record the interaction
             self.__record_interaction__(
                 task_id=task.task_id,
                 step=len(action_chain),
@@ -152,12 +145,10 @@ class TrustworthyAgent(BaseAgent):
                 action_name=agent_act.name,
                 action_params=agent_act.params
             )
-            
-            # Update trust scores list
-            self.trust_scores.append(trust_score)
-        
+        # ---------------------------------------------------
         return agent_act
 
+    # ---------------- Save to CSV (Optional) ----------------
     def __record_interaction__(self, **kwargs):
         """Record an LLM interaction to the trust score CSV file.
         
