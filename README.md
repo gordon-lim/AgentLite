@@ -40,7 +40,7 @@ This repository is a fork of [AgentLite](https://github.com/SalesforceAIResearch
 
    ```bash
    cd benchmark/hotpotqa
-   python evaluate_hotpot_qa.py --llm gpt-4.1-mini --agent_arch act
+   python evaluate_hotpot_qa.py --llm gpt-4.1-mini --agent_arch act --num_examples 5
    ```
 4. Results (including trust scores) will be saved in `data/`.
 
