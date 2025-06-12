@@ -42,6 +42,8 @@ This repository is a fork of [AgentLite](https://github.com/SalesforceAIResearch
    ```
 4. Results (including trust scores) will be saved in `data/`.
 
+---
+
 ### Minimal TLM Setup
 
 Our `TrustworthyAgent` includes additional code for benchmarking, but here is a minimal version that highlights only the essential TLM integration needed for trust scoring:
