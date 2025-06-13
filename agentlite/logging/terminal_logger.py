@@ -93,6 +93,7 @@ class TrustworthyAgentLogger(AgentLogger):
         FLAG_PRINT: bool = True,
         OBS_OFFSET: int = 99999,
         PROMPT_DEBUG_FLAG: bool = False,
+        hallu_metric: str = "tlm",
     ) -> None:
         super().__init__(
             log_file_name=log_file_name,
@@ -100,6 +101,7 @@ class TrustworthyAgentLogger(AgentLogger):
             OBS_OFFSET=OBS_OFFSET,
             PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG,
         )
+        self.hallu_metric = hallu_metric
 
     def __color_trust_score__(self, score: float):
         # Color coding based on trust score ranges
@@ -111,8 +113,16 @@ class TrustworthyAgentLogger(AgentLogger):
             color = bcolors.FAIL     # Low trust - red
         return f"{color}{score:.2f}{bcolors.ENDC}"
 
-    def log_action_trust(self, action: AgentAct, trust_score: float, agent_name: str, step_idx: int):
+    def log_action_trust(self, action: AgentAct, trust_score: float, agent_name: str, step_idx: int, hallu_metric: str = "tlm"):
         """Log an action's trustworthiness score."""        
+        # Determine the score type name based on the metric
+        if hallu_metric == "tlm":
+            score_type = "TLM trustworthiness score"
+        elif hallu_metric == "self_eval":
+            score_type = "Self-evaluation score"
+        else:
+            score_type = f"{hallu_metric} score"
+        
         # Log the trust score on its own line
-        trust_str = f"""Trustworthiness score: {self.__color_trust_score__(trust_score)}"""
+        trust_str = f"""{score_type}: {self.__color_trust_score__(trust_score)}"""
         self.__save_log__(trust_str)

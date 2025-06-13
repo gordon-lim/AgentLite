@@ -53,7 +53,7 @@ def load_hotpot_qa_data(level):
     # joblib requires python 3.10 or higher
     return joblib.load(file_path)
 
-def run_hotpot_qa_agent_one_complex_level(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None):
+def run_hotpot_qa_agent_one_complex_level(level="easy", llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None, hallu_metric="tlm"):
     """
     Test the WikiSearchAgent with a single specified dataset level and LLM.
     Args:
@@ -62,6 +62,7 @@ def run_hotpot_qa_agent_one_complex_level(level="easy", llm_name="gpt-3.5-turbo-
         agent_arch: Agent architecture type
         PROMPT_DEBUG_FLAG: Whether to enable prompt debugging
         num_examples: Number of examples to evaluate (default: None)
+        hallu_metric: Hallucination metric to use ("tlm", "self_eval")
     Returns:
         tuple: (average_f1_score, accuracy) for the specified level
     """
@@ -88,7 +89,7 @@ def run_hotpot_qa_agent_one_complex_level(level="easy", llm_name="gpt-3.5-turbo-
             }
         )
     llm = get_llm_backend(llm_config)
-    agent = WikiSearchAgent(llm=llm, agent_arch=agent_arch, PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG)
+    agent = WikiSearchAgent(llm=llm, agent_arch=agent_arch, PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG, hallu_metric=hallu_metric)
     
     # Initialize results file for this level
     results_file = f"data/{agent_arch}_{llm_name}_results_{level}.csv"
@@ -124,7 +125,7 @@ def run_hotpot_qa_agent_one_complex_level(level="easy", llm_name="gpt-3.5-turbo-
             
     return avg_f1, acc
 
-def run_hotpot_qa_agent(level=None, llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None):
+def run_hotpot_qa_agent(level=None, llm_name="gpt-3.5-turbo-16k-0613", agent_arch="react", PROMPT_DEBUG_FLAG=False, num_examples=None, hallu_metric="tlm"):
     """
     Test the WikiSearchAgent on HotPotQA benchmark.
     Args:
@@ -133,6 +134,7 @@ def run_hotpot_qa_agent(level=None, llm_name="gpt-3.5-turbo-16k-0613", agent_arc
         agent_arch: Agent architecture type
         PROMPT_DEBUG_FLAG: Whether to enable prompt debugging
         num_examples: Number of examples to evaluate per level (default: None)
+        hallu_metric: Hallucination metric to use ("tlm", "self_eval")
     Returns:
         dict: Results for each level containing (f1_score, accuracy) tuples
     """
@@ -144,7 +146,8 @@ def run_hotpot_qa_agent(level=None, llm_name="gpt-3.5-turbo-16k-0613", agent_arc
             llm_name=llm_name,
             agent_arch=agent_arch,
             PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG,
-            num_examples=num_examples
+            num_examples=num_examples,
+            hallu_metric=hallu_metric
         )
         return {level: (f1, acc)}
     else:
@@ -156,7 +159,8 @@ def run_hotpot_qa_agent(level=None, llm_name="gpt-3.5-turbo-16k-0613", agent_arc
                 llm_name=llm_name,
                 agent_arch=agent_arch,
                 PROMPT_DEBUG_FLAG=PROMPT_DEBUG_FLAG,
-                num_examples=num_examples
+                num_examples=num_examples,
+                hallu_metric=hallu_metric
             )
             results[lvl] = (f1, acc)
         return results
@@ -197,6 +201,13 @@ if __name__ == "__main__":
         default=None,
         help="Number of examples to evaluate. If not provided, uses the entire dataset.",
     )
+    parser.add_argument(
+        "--hallu_metric",
+        type=str,
+        choices=["tlm", "self_eval"],
+        default="tlm",
+        help="Hallucination metric to use for trustworthiness scoring",
+    )
     args = parser.parse_args()
 
     results = run_hotpot_qa_agent(
@@ -204,7 +215,8 @@ if __name__ == "__main__":
         llm_name=args.llm, 
         agent_arch=args.agent_arch, 
         PROMPT_DEBUG_FLAG=args.debug,
-        num_examples=args.num_examples
+        num_examples=args.num_examples,
+        hallu_metric=args.hallu_metric
     )
     
     print(f"{'+'*100}")

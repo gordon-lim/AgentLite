@@ -7,6 +7,7 @@ from .BaseAgent import BaseAgent
 from agentlite.commons import TaskPackage, AgentAct
 from agentlite.actions import FinishAct
 from agentlite.commons.AgentAct import ActObsChainType
+from agentlite.agents.hallu_utils import get_self_eval_score
 
 # ----- Minimal TLM Setup -----------------
 from cleanlab_tlm import TLM
@@ -25,6 +26,8 @@ class TrustworthyAgent(BaseAgent):
             Path to save trustworthiness scores.
         score_last_only: bool, optional
             Whether to only score the last Finish act.
+        hallu_metric: str, optional
+            The hallucination metric to use for scoring. Options: "tlm", "self_eval".
     """
     
     def __init__(
@@ -35,6 +38,7 @@ class TrustworthyAgent(BaseAgent):
         actions: List[Any] = [],
         trust_score_file: str = None,
         score_last_only: bool = False,
+        hallu_metric: str = "tlm",
         **kwargs
     ):
         # ---------------- Logger Setup (Optional) ----------------
@@ -43,10 +47,11 @@ class TrustworthyAgent(BaseAgent):
         agent_arch = kwargs.get("agent_arch", "unk")
         logger = kwargs.pop('logger', None)
         if logger is None:
-            log_file_name = f"trustworthy_{agent_arch}_{llm_model_name}.log"
+            log_file_name = f"{agent_arch}_{llm_model_name}_{hallu_metric}.log"
             logger = TrustworthyAgentLogger(
                 log_file_name=log_file_name,
-                FLAG_PRINT=True
+                FLAG_PRINT=True,
+                hallu_metric=hallu_metric
             )
         kwargs['logger'] = logger
         # ---------------------------------------------------
@@ -57,6 +62,7 @@ class TrustworthyAgent(BaseAgent):
         # ---------------------------------------------------
         
         self.score_last_only = score_last_only         # Optional: Whether to score only final Finish act
+        self.hallu_metric = hallu_metric               # The hallucination metric to use
         
         # ---------------- Minimal TLM Setup ----------------
         self.tlm = TLM()
@@ -64,8 +70,12 @@ class TrustworthyAgent(BaseAgent):
 
         # ---------------- Save to CSV (Optional) ----------------
         if trust_score_file is None:
-            trust_score_file = f"data/trustworthy_{agent_arch}_{llm_model_name}.csv"
+            trust_score_file = f"data/{agent_arch}_{llm_model_name}_{hallu_metric}.csv"
         self.trust_score_file = trust_score_file
+        
+        # Determine the score column name based on the metric
+        score_column_name = f"{self.hallu_metric}_score"
+        
         try:
             with open(self.trust_score_file, 'x', newline='') as f:
                 writer = csv.writer(f)
@@ -77,7 +87,7 @@ class TrustworthyAgent(BaseAgent):
                     'prompt',
                     'raw_action',
                     'finish_response',
-                    'trust_score',
+                    score_column_name,
                     'f1',
                     'action_name',
                     'action_params'
@@ -113,7 +123,14 @@ class TrustworthyAgent(BaseAgent):
         # ---------------- Minimal TLM Setup ----------------
         trust_score = None
         if not self.score_last_only or agent_act.name == FinishAct.action_name:
-            trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
+            if self.hallu_metric == "tlm":
+                trust_score = self.tlm.get_trustworthiness_score(action_prompt, raw_action)["trustworthiness_score"]
+        # ---------------------------------------------------
+        # ---------------- Benchmarking (Optional) ----------------
+            elif self.hallu_metric == "self_eval":
+                trust_score = get_self_eval_score(self.llm_layer, action_prompt, raw_action)
+            else:
+                raise ValueError(f"Unsupported hallucination metric: {self.hallu_metric}")
         # ---------------------------------------------------
 
         # ---------------- Get F1 score & Response (Optional) ----------------
@@ -129,7 +146,8 @@ class TrustworthyAgent(BaseAgent):
                 action=agent_act,
                 trust_score=trust_score,
                 agent_name=self.name,
-                step_idx=len(action_chain)
+                step_idx=len(action_chain),
+                hallu_metric=self.hallu_metric
             )
 
             self.__record_interaction__(
@@ -143,7 +161,8 @@ class TrustworthyAgent(BaseAgent):
                 trust_score=trust_score,
                 f1=f1,
                 action_name=agent_act.name,
-                action_params=agent_act.params
+                action_params=agent_act.params,
+                hallu_metric=self.hallu_metric
             )
         # ---------------------------------------------------
         return agent_act
@@ -156,6 +175,10 @@ class TrustworthyAgent(BaseAgent):
             **kwargs: Interaction details to record
         """
         try:
+            # Determine the score column name based on the metric
+            hallu_metric = kwargs.get('hallu_metric', 'tlm')
+            score_column_name = f"{hallu_metric}_score"
+            
             with open(self.trust_score_file, 'a', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow([
@@ -166,7 +189,7 @@ class TrustworthyAgent(BaseAgent):
                     kwargs.get('prompt', ''),
                     kwargs.get('raw_action', ''),
                     kwargs.get('finish_response', None),
-                    kwargs.get('trust_score', None),
+                    kwargs.get(score_column_name, None),
                     kwargs.get('f1', None),
                     kwargs.get('action_name', ''),
                     str(kwargs.get('action_params', {}))
